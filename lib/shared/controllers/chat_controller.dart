@@ -92,12 +92,13 @@ class ChatController extends ChangeNotifier {
 
   // Messaging -------------------------------------------------------------------
 
-  Future<void> sendMessage(String content) async {
+  Future<void> sendMessage(String content, {List<MessageAttachment>? attachments}) async {
     final trimmed = content.trim();
-    if (trimmed.isEmpty || _isSending) return;
+    final hasContent = trimmed.isNotEmpty || (attachments != null && attachments.isNotEmpty);
+    if (!hasContent || _isSending) return;
 
     _clearError();
-    final userMsg = ChatMessage.user(trimmed);
+    final userMsg = ChatMessage.user(trimmed, attachments: attachments ?? []);
     _messages.add(userMsg);
     notifyListeners();
 
@@ -116,6 +117,7 @@ class ChatController extends ChangeNotifier {
       final result = await AIService.instance.sendCompletion(
         trimmed,
         context: ctx,
+        attachments: attachments ?? [],
         options: {'session_id': _sessionId},
         conversationId: _remoteConversationId,
       );
@@ -153,6 +155,7 @@ class ChatController extends ChangeNotifier {
     final res = await historyRepository.addUserMessage(
       m.content,
       conversationId: _remoteConversationId,
+      attachments: m.attachments.isNotEmpty ? m.attachments : null,
     );
 
     res.when(
@@ -197,6 +200,7 @@ class ChatController extends ChangeNotifier {
     final res = await historyRepository.addAssistantMessage(
       m.content,
       conversationId: _remoteConversationId,
+      attachments: m.attachments.isNotEmpty ? m.attachments : null,
     );
     res.when(
       success: (_) {

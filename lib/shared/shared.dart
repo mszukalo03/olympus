@@ -30,6 +30,9 @@ export 'services/custom/custom_endpoint_service.dart';
 export 'services/custom/jellyseerr_service.dart';
 export 'services/custom/searxng_service.dart';
 export 'services/custom/duckduckgo_service.dart';
+export 'services/attachment_service.dart';
+export 'services/audio_player_service.dart';
 
 // Widgets
 export 'widgets/section_card.dart';
+export 'widgets/attachment_widgets.dart';

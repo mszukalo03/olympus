@@ -264,6 +264,7 @@ class HistoryService {
     required String message,
     String? modelName,
     List<double>? embedding,
+    List<MessageAttachment>? attachments,
   }) async {
     return catchingAsync(() async {
       final uri = _u('/messages');
@@ -273,6 +274,8 @@ class HistoryService {
         'message': message,
         if (modelName != null) 'model_name': modelName,
         if (embedding != null) 'embedding': embedding,
+        if (attachments != null && attachments.isNotEmpty)
+          'attachments': attachments.map((a) => a.toJson()).toList(),
       }..removeWhere((k, v) => v == null);
       final res = await _client
           .post(uri, headers: _headers, body: jsonEncode(body))

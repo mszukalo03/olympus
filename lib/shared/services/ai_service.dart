@@ -108,14 +108,25 @@ class AIService {
           if (attachments.isNotEmpty) 'attachments': attachments.map((a) => a.toJson()).toList(),
         },
       ],
-      // Metadata helpers (non-breaking for existing workflows that ignore extras)
+      // Enhanced metadata for n8n filtering
       'meta': {
         'model': model,
         'client': AppInfo.name,
         'timestamp': DateTime.now().toIso8601String(),
         'has_attachments': attachments.isNotEmpty,
+        'attachment_count': attachments.length,
         'attachment_types': attachments.map((a) => a.type.value).toSet().toList(),
+        'has_images': attachments.any((a) => a.type.value == 'image'),
+        'has_audio': attachments.any((a) => a.type.value == 'audio'),
+        'image_count': attachments.where((a) => a.type.value == 'image').length,
+        'audio_count': attachments.where((a) => a.type.value == 'audio').length,
+        'total_file_size': attachments.fold<int>(0, (sum, a) => sum + (a.fileSizeBytes ?? 0)),
       },
+      // Top-level boolean flags for easy n8n filtering
+      'has_attachments': attachments.isNotEmpty,
+      'has_images': attachments.any((a) => a.type.value == 'image'),
+      'has_audio': attachments.any((a) => a.type.value == 'audio'),
+      'message_type': _determineMessageType(prompt, attachments),
       // Top-level session identifier for routing logic
       if (sessionId != null) 'session_id': sessionId,
       // Conversation ID for context retrieval
@@ -134,10 +145,51 @@ class AIService {
         'fileSizeBytes': a.fileSizeBytes,
         'base64Data': a.base64Data,
         'metadata': a.metadata,
+        // Additional fields for n8n processing
+        'is_image': a.type.value == 'image',
+        'is_audio': a.type.value == 'audio',
+        'file_extension': a.fileName?.split('.').last?.toLowerCase(),
       }).toList();
+
+      // Add summary of attachment info for quick filtering
+      body['attachment_summary'] = {
+        'total_count': attachments.length,
+        'images': attachments.where((a) => a.type.value == 'image').map((a) => {
+          'id': a.id,
+          'fileName': a.fileName,
+          'mimeType': a.mimeType,
+          'sizeBytes': a.fileSizeBytes,
+        }).toList(),
+        'audio': attachments.where((a) => a.type.value == 'audio').map((a) => {
+          'id': a.id,
+          'fileName': a.fileName,
+          'mimeType': a.mimeType,
+          'sizeBytes': a.fileSizeBytes,
+          'duration': a.metadata?['duration'],
+        }).toList(),
+      };
     }
 
     return body;
+  }
+
+  /// Determine message type for n8n routing
+  String _determineMessageType(String prompt, List<MessageAttachment> attachments) {
+    if (attachments.isEmpty) return 'text_only';
+
+    final hasImages = attachments.any((a) => a.type.value == 'image');
+    final hasAudio = attachments.any((a) => a.type.value == 'audio');
+    final hasText = prompt.trim().isNotEmpty;
+
+    if (hasImages && hasAudio && hasText) return 'mixed_media_with_text';
+    if (hasImages && hasAudio) return 'mixed_media';
+    if (hasImages && hasText) return 'image_with_text';
+    if (hasAudio && hasText) return 'audio_with_text';
+    if (hasImages) return 'image_only';
+    if (hasAudio) return 'audio_only';
+    if (hasText) return 'text_only';
+
+    return 'empty';
   }
 
   /// Default completion options

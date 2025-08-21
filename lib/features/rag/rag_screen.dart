@@ -6,8 +6,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
-import '../../../shared/shared.dart';
-import '../../../core/core.dart';
+import '../../shared/shared.dart';
+import '../../core/core.dart';
 
 /// RAG Management Screen
 /// ---------------------------------------------------------------------------

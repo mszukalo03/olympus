@@ -3,8 +3,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../../core/core.dart';
-import '../../../../shared/shared.dart';
+import '../../../core/core.dart';
+import '../../../shared/shared.dart';
+
 
 /// SettingsScreen
 /// ---------------------------------------------------------------------------
@@ -196,8 +197,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _runtimeSection(context, cfg),
           _customEndpointsSection(context),
           _appearanceSection(settings),
-          _securitySection(),
-          _nextStepsSection(),
           const SizedBox(height: UIConstants.spacingM),
           _footer(context),
         ],
@@ -258,8 +257,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           _endpointField(
             controller: _automationApiCtrl,
-            label: 'Automation (Webhook) Endpoint',
-            hint: 'http://localhost:5678/webhook',
+            label: 'Automation API Endpoint',
+            hint: 'http://localhost:5678',
           ),
           _endpointField(
             controller: _historyApiCtrl,
@@ -322,27 +321,60 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _appearanceSection(SettingsController settings) {
-    return SectionCard(
-      title: 'Appearance',
-      child: Column(
+    return Align(
+      alignment: Alignment.centerLeft,
+      widthFactor: 1,
+      heightFactor: 1,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          _themeModeTile(
-            settings: settings,
-            mode: ThemeMode.system,
-            label: 'Follow System',
-            icon: Icons.auto_mode,
-          ),
-          _themeModeTile(
-            settings: settings,
-            mode: ThemeMode.light,
-            label: 'Light',
-            icon: Icons.light_mode_outlined,
-          ),
-          _themeModeTile(
-            settings: settings,
-            mode: ThemeMode.dark,
-            label: 'Dark',
-            icon: Icons.dark_mode_outlined,
+          Card(
+            margin: const EdgeInsets.only(bottom: 16),
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Appearance',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 12),
+                  SegmentedButton<ThemeMode>(
+                    segments: const [
+                      ButtonSegment(
+                        value: ThemeMode.system,
+                        label: Text('System'),
+                        icon: Icon(Icons.auto_mode),
+                      ),
+                      ButtonSegment(
+                        value: ThemeMode.light,
+                        label: Text('Light'),
+                        icon: Icon(Icons.light_mode_outlined),
+                      ),
+                      ButtonSegment(
+                        value: ThemeMode.dark,
+                        label: Text('Dark'),
+                        icon: Icon(Icons.dark_mode_outlined),
+                      ),
+                    ],
+                    selected: {settings.themeMode},
+                    showSelectedIcon: true,
+                    onSelectionChanged: (selection) {
+                      final mode = selection.first;
+                      if (mode != settings.themeMode) {
+                        settings.setTheme(mode);
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
@@ -731,32 +763,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _securitySection() {
-    return const SectionCard(
-      title: 'Security Guidance',
-      child: Text(
-        'Do not embed API keys directly in the application bundle.\n'
-        'Provide credentials via secure runtime mechanisms (injected config, '
-        'token exchange, or secure storage). Consider implementing network '
-        'layer hardening (certificate pinning, mTLS) and rotating tokens.',
-        style: TextStyle(fontSize: 13, height: 1.25),
-      ),
-    );
+    return const SizedBox.shrink();
+  }
+
+  Widget _debugSection(BuildContext context) {
+    // Removed: webhook debug UI
+    return const SizedBox.shrink();
   }
 
   Widget _nextStepsSection() {
-    return const SectionCard(
-      title: 'Next Steps',
-      child: Text(
-        'Potential enhancements:\n'
-        '• Multi-endpoint management & health checks\n'
-        '• Profile/account switching with auth\n'
-        '• Streaming response toggle & tool calling feature flags\n'
-        '• Advanced theming (custom palettes, dynamic color)\n'
-        '• Data export / import (conversation history)\n'
-        '• Privacy controls (local purge, telemetry opt-in)',
-        style: TextStyle(height: 1.3),
-      ),
-    );
+    return const SizedBox.shrink();
   }
 
   Widget _footer(BuildContext context) {

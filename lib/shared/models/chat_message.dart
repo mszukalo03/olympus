@@ -2,7 +2,7 @@
 /// ---------------------------------------------------------------------------
 /// Optimized immutable message model with enhanced utilities and validation.
 /// Supports text, image, and audio attachments.
-library chat_message;
+library;
 
 import 'package:uuid/uuid.dart';
 
@@ -339,5 +339,5 @@ extension ChatMessageListX on List<ChatMessage> {
   bool get hasContent => conversationOnly.isNotEmpty;
 
   /// Total character count
-  int get totalLength => fold(0, (sum, message) => sum + message.length);
+  int get totalLength => fold<int>(0, (sum, message) => sum + message.length);
 }

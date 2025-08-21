@@ -2,7 +2,9 @@
 /// ---------------------------------------------------------------------------
 /// Service for handling image and audio attachments in chat messages.
 /// Provides file picking, validation, compression, and encoding functionality.
-library attachment_service;
+library;
+
+
 
 import 'dart:convert';
 import 'dart:io';
@@ -112,7 +114,7 @@ class AttachmentService {
   /// Pick multiple images from gallery
   Future<Result<List<MessageAttachment>>> pickMultipleImages() async {
     return catchingAsync(() async {
-      final List<XFile> images = await _imagePicker.pickMultipleImages(
+      final List<XFile> images = await _imagePicker.pickMultiImage(
         maxWidth: AttachmentConfig.maxImageWidth.toDouble(),
         maxHeight: AttachmentConfig.maxImageHeight.toDouble(),
         imageQuality: 85,

@@ -2,10 +2,8 @@
 /// ---------------------------------------------------------------------------
 /// UI components for displaying and managing message attachments.
 /// Includes image previews, audio players, attachment buttons, and recording UI.
-library attachment_widgets;
 
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -14,7 +12,7 @@ import 'package:logging/logging.dart';
 
 import '../models/chat_message.dart';
 import '../services/attachment_service.dart';
-import '../../core/core.dart';
+import '../services/audio_player_service.dart';
 
 /// Attachment preview widget for message bubbles
 class AttachmentPreview extends StatelessWidget {
@@ -299,7 +297,7 @@ class _AudioAttachmentWidgetState extends State<AudioAttachmentWidget> {
       if (mounted) {
         setState(() {
           _isPlaying = state == PlayerState.playing;
-          _isLoading = state == PlayerState.preparing;
+          _isLoading = false; // Set to false since buffering isn't available
         });
       }
     });

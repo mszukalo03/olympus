@@ -81,6 +81,7 @@ abstract interface class HistoryRepository {
     int? conversationId,
     String? modelName,
     List<double>? embedding,
+    List<MessageAttachment>? attachments,
   });
 
   /// Append an assistant message.
@@ -89,6 +90,7 @@ abstract interface class HistoryRepository {
     int? conversationId,
     String? modelName,
     List<double>? embedding,
+    List<MessageAttachment>? attachments,
   });
 
   /// Generic append (role = 'user' | 'ai').
@@ -98,6 +100,7 @@ abstract interface class HistoryRepository {
     int? conversationId,
     String? modelName,
     List<double>? embedding,
+    List<MessageAttachment>? attachments,
   });
 
   /// Export full conversation JSON.
@@ -221,12 +224,14 @@ class RemoteHistoryRepository implements HistoryRepository {
     int? conversationId,
     String? modelName,
     List<double>? embedding,
+    List<MessageAttachment>? attachments,
   }) => addMessage(
     content,
     sender: 'user',
     conversationId: conversationId ?? activeConversationId,
     modelName: modelName,
     embedding: embedding,
+    attachments: attachments,
   );
 
   @override
@@ -235,12 +240,14 @@ class RemoteHistoryRepository implements HistoryRepository {
     int? conversationId,
     String? modelName,
     List<double>? embedding,
+    List<MessageAttachment>? attachments,
   }) => addMessage(
     content,
     sender: 'ai',
     conversationId: conversationId ?? activeConversationId,
     modelName: modelName,
     embedding: embedding,
+    attachments: attachments,
   );
 
   @override
@@ -250,8 +257,9 @@ class RemoteHistoryRepository implements HistoryRepository {
     int? conversationId,
     String? modelName,
     List<double>? embedding,
+    List<MessageAttachment>? attachments,
   }) async {
-    if (content.trim().isEmpty) {
+    if (content.trim().isEmpty && (attachments == null || attachments.isEmpty)) {
       return const Failure(
         AppError(
           message: ErrorMessages.emptyMessage,
@@ -266,13 +274,20 @@ class RemoteHistoryRepository implements HistoryRepository {
       message: content,
       modelName: modelName,
       embedding: embedding,
+      attachments: attachments,
     );
 
     return res.when(
       success: (tuple) {
         final (cid, remote) = tuple;
         setActiveConversation(cid);
-        return Success(remote.toChatMessage());
+        final chatMessage = remote.toChatMessage();
+        // Preserve attachments from original request since backend might not return them
+        if (attachments != null && attachments.isNotEmpty) {
+          final updatedMessage = chatMessage.copyWith(attachments: attachments);
+          return Success(updatedMessage);
+        }
+        return Success(chatMessage);
       },
       failure: (err) => Failure(err),
     );
