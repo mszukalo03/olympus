@@ -362,6 +362,7 @@ class AudioPlayerService {
       case 'audio/mpeg':
         return '.mp3';
       case 'audio/wav':
+      case 'audio/x-wav':
         return '.wav';
       case 'audio/mp4':
         return '.m4a';

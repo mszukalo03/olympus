@@ -35,7 +35,7 @@ class AIService {
     Map<String, dynamic>? options,
     int? conversationId,
   }) async {
-    if (prompt.trim().isEmpty) {
+    if (prompt.trim().isEmpty && attachments.isEmpty) {
       return const Failure(
         AppError(
           message: ErrorMessages.emptyMessage,
@@ -144,6 +144,9 @@ class AIService {
         'mimeType': a.mimeType,
         'fileSizeBytes': a.fileSizeBytes,
         'base64Data': a.base64Data,
+        'dataUri': (a.base64Data != null && a.mimeType != null)
+            ? 'data:${a.mimeType};base64,${a.base64Data}'
+            : null,
         'metadata': a.metadata,
         // Additional fields for n8n processing
         'is_image': a.type.value == 'image',

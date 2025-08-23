@@ -40,6 +40,7 @@ class AttachmentConfig {
   static const List<String> supportedAudioTypes = [
     'audio/mpeg', // mp3
     'audio/wav',
+    'audio/x-wav',
     'audio/mp4', // m4a
     'audio/aac',
     'audio/ogg',
@@ -184,13 +185,15 @@ class AttachmentService {
         );
       }
 
-      // Check microphone permission
-      final micStatus = await Permission.microphone.request();
-      if (!micStatus.isGranted) {
-        throw AppError(
-          message: 'Microphone permission is required to record audio',
-          type: ErrorType.forbidden,
-        );
+      // Check microphone permission (skip on Linux/desktop where it's not needed)
+      if (Platform.isAndroid || Platform.isIOS) {
+        final micStatus = await Permission.microphone.request();
+        if (!micStatus.isGranted) {
+          throw AppError(
+            message: 'Microphone permission is required to record audio',
+            type: ErrorType.forbidden,
+          );
+        }
       }
 
       // Check if device has recording capability
@@ -205,15 +208,18 @@ class AttachmentService {
       // Generate temporary file path
       final tempDir = await getTemporaryDirectory();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final recordingPath = '${tempDir.path}/recording_$timestamp.m4a';
+      final String ext = Platform.isLinux ? 'wav' : 'm4a';
+      final recordingPath = '${tempDir.path}/recording_$timestamp.$ext';
 
-      // Start recording
+      // Start recording with platform-appropriate encoder
+      final recordConfig = RecordConfig(
+        encoder: Platform.isLinux ? AudioEncoder.wav : AudioEncoder.aacLc,
+        bitRate: 128000,
+        sampleRate: Platform.isLinux ? 16000 : 44100,
+        numChannels: 1,
+      );
       await _audioRecorder.start(
-        const RecordConfig(
-          encoder: AudioEncoder.aacLc,
-          bitRate: 128000,
-          sampleRate: 44100,
-        ),
+        recordConfig,
         path: recordingPath,
       );
 
@@ -444,6 +450,56 @@ class AttachmentService {
     final minutes = duration.inMinutes;
     final remainingSeconds = duration.inSeconds % 60;
     return '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+  }
+
+  /// Prepare payload for n8n ElevenLabs Speech-to-Text node.
+  /// Returns a map with fileName, mimeType, base64, dataUri, sizeBytes, and durationSeconds.
+  static Map<String, dynamic> formatAudioForElevenLabsTranscription(MessageAttachment attachment) {
+    if (attachment.type != AttachmentType.audio) {
+      throw AppError(
+        message: 'Attachment is not an audio file',
+        type: ErrorType.validation,
+      );
+    }
+
+    final String mimeType = attachment.mimeType ?? 'audio/wav';
+    final String? base64Data = attachment.base64Data;
+    if (base64Data == null || base64Data.isEmpty) {
+      throw AppError(
+        message: 'Audio attachment has no data',
+        type: ErrorType.validation,
+      );
+    }
+
+    final String fileName = attachment.fileName ?? 'audio${_fileExtensionFromMime(mimeType)}';
+    final String dataUri = 'data:$mimeType;base64,$base64Data';
+
+    return {
+      'fileName': fileName,
+      'mimeType': mimeType,
+      'base64': base64Data,
+      'dataUri': dataUri,
+      'sizeBytes': attachment.fileSizeBytes,
+      'durationSeconds': (attachment.metadata?['duration'] as num?)?.toDouble(),
+    };
+  }
+
+  static String _fileExtensionFromMime(String mime) {
+    switch (mime.toLowerCase()) {
+      case 'audio/mpeg':
+        return '.mp3';
+      case 'audio/wav':
+      case 'audio/x-wav':
+        return '.wav';
+      case 'audio/mp4':
+        return '.m4a';
+      case 'audio/aac':
+        return '.aac';
+      case 'audio/ogg':
+        return '.ogg';
+      default:
+        return '.wav';
+    }
   }
 
   /// Clean up temporary files
